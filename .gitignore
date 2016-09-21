@@ -38,3 +38,6 @@ broker/moquette_store.*
 embedding_moquette/target/
 broker/nb-configuration.xml
 broker/nbactions-Server.xml
+/*.mapdb
+/*.p
+/*.t

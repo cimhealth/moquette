@@ -44,4 +44,6 @@ public interface Interceptor {
 
     void notifyTopicUnsubscribed(String topic, String clientID);
 
+    void notifyLost(String clientID);
+
 }

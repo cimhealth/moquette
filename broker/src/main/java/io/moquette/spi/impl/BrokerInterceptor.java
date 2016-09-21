@@ -106,4 +106,16 @@ final class BrokerInterceptor implements Interceptor {
             });
         }
     }
+
+    @Override
+    public void notifyLost(String clientID) {
+        for (final InterceptHandler handler : this.handlers) {
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    handler.onLost(new InterceptLostMessage(clientID));
+                }
+            });
+        }
+    }
 }

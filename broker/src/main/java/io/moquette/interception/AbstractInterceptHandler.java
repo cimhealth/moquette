@@ -19,23 +19,33 @@ import io.moquette.interception.messages.*;
 
 /**
  * Basic abstract class usefull to avoid empty methods creation in subclasses.
- *
+ * <p>
  * Created by andrea on 08/12/15.
  */
 public abstract class AbstractInterceptHandler implements InterceptHandler {
 
     @Override
-    public void onConnect(InterceptConnectMessage msg) {}
+    public void onConnect(InterceptConnectMessage msg) {
+    }
 
     @Override
-    public void onDisconnect(InterceptDisconnectMessage msg) {}
+    public void onDisconnect(InterceptDisconnectMessage msg) {
+    }
 
     @Override
-    public void onPublish(InterceptPublishMessage msg) {}
+    public void onPublish(InterceptPublishMessage msg) {
+    }
 
     @Override
-    public void onSubscribe(InterceptSubscribeMessage msg) {}
+    public void onSubscribe(InterceptSubscribeMessage msg) {
+    }
 
     @Override
-    public void onUnsubscribe(InterceptUnsubscribeMessage msg) {}
+    public void onUnsubscribe(InterceptUnsubscribeMessage msg) {
+    }
+
+    @Override
+    public void onLost(InterceptLostMessage msg) {
+
+    }
 }

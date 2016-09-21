@@ -648,6 +648,8 @@ public class ProtocolProcessor {
             forwardPublishWill(will, clientID);
             m_willStore.remove(clientID);
         }
+        //断开连接触发监听器
+        m_interceptor.notifyLost(clientID);
     }
     
     /**
