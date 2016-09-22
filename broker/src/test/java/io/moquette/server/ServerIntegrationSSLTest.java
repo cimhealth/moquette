@@ -76,7 +76,7 @@ public class ServerIntegrationSSLTest {
 
         Properties sslProps = new Properties();
         sslProps.put(BrokerConstants.SSL_PORT_PROPERTY_NAME, "8883");
-        sslProps.put(BrokerConstants.JKS_PATH_PROPERTY_NAME, "serverk.jks");
+        sslProps.put(BrokerConstants.JKS_PATH_PROPERTY_NAME, "ows.jks");
         sslProps.put(BrokerConstants.KEY_STORE_PASSWORD_PROPERTY_NAME, "123123");
         sslProps.put(BrokerConstants.KEY_MANAGER_PASSWORD_PROPERTY_NAME, "123123");
         sslProps.put(BrokerConstants.PERSISTENT_STORE_PROPERTY_NAME, IntegrationUtils.localMapDBPath());
@@ -165,7 +165,7 @@ public class ServerIntegrationSSLTest {
     private SSLSocketFactory configureSSLSocketFactory() throws KeyManagementException, NoSuchAlgorithmException, UnrecoverableKeyException, IOException, CertificateException, KeyStoreException {
         KeyStore ks = KeyStore.getInstance("JKS");
 //        InputStream jksInputStream = getClass().getClassLoader().getResourceAsStream("clientkeystore.jks");
-        InputStream jksInputStream = getClass().getClassLoader().getResourceAsStream("clientk.jks");
+        InputStream jksInputStream = getClass().getClassLoader().getResourceAsStream("owc.jks");
         ks.load(jksInputStream, "123123".toCharArray());
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
