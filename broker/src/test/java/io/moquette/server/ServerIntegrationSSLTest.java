@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Check that Moquette could also handle SSL.
- * 
+ *
  * @author andrea
  */
 public class ServerIntegrationSSLTest {
@@ -93,7 +93,7 @@ public class ServerIntegrationSSLTest {
 
         m_client = new MqttClient("ssl://localhost:8883", "TestClient", s_dataStore);
 //        m_client = new MqttClient("ssl://test.mosquitto.org:8883", "TestClient", s_dataStore);
-        
+
         m_callback = new TestCallback();
         m_client.setCallback(m_callback);
     }
@@ -114,12 +114,24 @@ public class ServerIntegrationSSLTest {
         }
         assertFalse(dbFile.exists());
     }
-    
+
+    /**
+     * 单向认证证书生成命令
+     * keytool -keystore ows.jks -alias owserver -genkey -keyalg RSA
+     * <p>
+     * keytool -export -alias owserver -keystore ows.jks -storepass 123123 -file ows.cer
+     * <p>
+     * keytool -keystore owc.jks -alias owclient -genkey -keyalg RSA
+     * <p>
+     * keytool -import -trustcacerts -alias owserver -file ows.cer -storepass 123123 -keystore owc.jks
+     *
+     * @throws Exception
+     */
     @Test
     public void checkSupportSSL() throws Exception {
         LOG.info("*** checkSupportSSL ***");
         SSLSocketFactory ssf = configureSSLSocketFactory();
-        
+
         MqttConnectOptions options = new MqttConnectOptions();
         options.setSocketFactory(ssf);
         m_client.connect(options);
@@ -131,34 +143,35 @@ public class ServerIntegrationSSLTest {
     public void checkSupportSSLForMultipleClient() throws Exception {
         LOG.info("*** checkSupportSSLForMultipleClient ***");
         SSLSocketFactory ssf = configureSSLSocketFactory();
-        
+
         MqttConnectOptions options = new MqttConnectOptions();
         options.setSocketFactory(ssf);
         m_client.connect(options);
         m_client.subscribe("/topic", 0);
-        
+
         MqttClient secondClient = new MqttClient("ssl://localhost:8883", "secondTestClient", new MemoryPersistence());
         MqttConnectOptions secondClientOptions = new MqttConnectOptions();
         secondClientOptions.setSocketFactory(ssf);
         secondClient.connect(secondClientOptions);
         secondClient.publish("/topic", new MqttMessage("message".getBytes()));
         secondClient.disconnect();
-        
+
         m_client.disconnect();
     }
+
     /**
      * keystore generated into test/resources with command:
-     * 
+     * <p>
      * keytool -keystore clientkeystore.jks -alias testclient -genkey -keyalg RSA
      * -> mandatory to put the name surname
      * -> password is passw0rd
      * -> type yes at the end
-     * 
+     * <p>
      * to generate the crt file from the keystore
      * -- keytool -certreq -alias testclient -keystore clientkeystore.jks -file testclient.csr
-     * 
+     * <p>
      * keytool -export -alias testclient -keystore clientkeystore.jks -file testclient.crt
-     * 
+     * <p>
      * to import an existing certificate:
      * keytool -keystore clientkeystore.jks -import -alias testclient -file testclient.crt -trustcacerts
      */
@@ -174,9 +187,9 @@ public class ServerIntegrationSSLTest {
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tmf.init(ks);
 
-        SSLContext sc = SSLContext.getInstance("TLS"); 
-        TrustManager[] trustManagers = tmf.getTrustManagers(); 
-        sc.init(kmf.getKeyManagers(), trustManagers, null); 
+        SSLContext sc = SSLContext.getInstance("TLS");
+        TrustManager[] trustManagers = tmf.getTrustManagers();
+        sc.init(kmf.getKeyManagers(), trustManagers, null);
 
         SSLSocketFactory ssf = sc.getSocketFactory();
         return ssf;
