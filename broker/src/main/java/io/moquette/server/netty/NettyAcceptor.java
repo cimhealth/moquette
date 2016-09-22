@@ -284,7 +284,7 @@ public class NettyAcceptor implements ServerAcceptor {
     private ChannelHandler createSslHandler(SSLContext sslContext) {
         SSLEngine sslEngine = sslContext.createSSLEngine();
         sslEngine.setUseClientMode(false);
-        sslEngine.setNeedClientAuth(false);
+        sslEngine.setNeedClientAuth(false);//单向认证
         return new SslHandler(sslEngine);
     }
 }
