@@ -36,10 +36,15 @@ public class PaintMqttServer extends Server {
     static Multimap<String, String> room = ArrayListMultimap.create();
 
     public static void main(String[] args) throws IOException {
-
+        String keystore="D:\\Work\\workspace\\moquette1645\\broker\\src\\test\\resources\\ows.jks";
         Properties cfg = new Properties();
         cfg.put(BrokerConstants.HOST_PROPERTY_NAME, "localhost");
         cfg.put(BrokerConstants.PORT_PROPERTY_NAME, "9999");
+
+        cfg.put(BrokerConstants.SSL_PORT_PROPERTY_NAME, "8883");
+        cfg.put(BrokerConstants.JKS_PATH_PROPERTY_NAME, keystore);
+        cfg.put(BrokerConstants.KEY_STORE_PASSWORD_PROPERTY_NAME, "123123");
+        cfg.put(BrokerConstants.KEY_MANAGER_PASSWORD_PROPERTY_NAME, "123123");
         final PaintMqttServer server = new PaintMqttServer();
 //        final Properties configProps = IntegrationUtils.prepareTestPropeties();
         class JoinListener extends AbstractInterceptHandler {

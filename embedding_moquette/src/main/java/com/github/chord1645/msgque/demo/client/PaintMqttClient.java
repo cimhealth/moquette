@@ -7,19 +7,17 @@ import com.github.chord1645.msgque.demo.model.BaseData;
 import com.github.chord1645.msgque.demo.model.PaintData;
 import com.github.chord1645.msgque.demo.ui.Apoint;
 import com.github.chord1645.msgque.demo.ui.PaintFrame;
-import io.moquette.proto.messages.AbstractMessage;
-import io.moquette.proto.messages.PublishMessage;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.msgpack.MessagePack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
+import javax.net.ssl.*;
+import java.io.*;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class PaintMqttClient implements IPaintClient {
@@ -35,15 +33,19 @@ public class PaintMqttClient implements IPaintClient {
     }
 
     public static void main(String[] args) throws Exception {
-        new PaintMqttClient().connect("tcp://localhost:9999");
+//        new PaintMqttClient().connect("tcp://localhost:9999");
+        new PaintMqttClient().connect("ssl://localhost:8883");
     }
 
-    private void connect(String url) throws MqttException {
+    private void connect(String url) throws MqttException, CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyManagementException, KeyStoreException, IOException {
         String tmpDir = System.getProperty("java.io.tmpdir");
         dataStore = new MqttDefaultFilePersistence(tmpDir + File.separator + "publisher");
         iclient = new MqttClient(url, System.currentTimeMillis() + "", dataStore);
         iclient.setCallback(new TestCallback());
-        iclient.connect();
+        SSLSocketFactory ssf = configureSSLSocketFactory();
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setSocketFactory(ssf);
+        iclient.connect(options);
 //        iclient.disconnect();
 //        iclient.subscribe(Topics.C_PAINT, qos);
 //        iclient.subscribe(Topics.S_JOIN, qos);
@@ -91,7 +93,7 @@ public class PaintMqttClient implements IPaintClient {
     @Override
     public boolean join(String room, String player) {
         try {
-            this.roomId =room;
+            this.roomId = room;
             iclient.subscribe(Topics.room(room), qos);
             iclient.subscribe(Topics.paint(room), qos);
             JSONObject obj = JSON.parseObject("{}");
@@ -109,8 +111,25 @@ public class PaintMqttClient implements IPaintClient {
         return false;
     }
 
+    private SSLSocketFactory configureSSLSocketFactory() throws KeyManagementException, NoSuchAlgorithmException, UnrecoverableKeyException, IOException, CertificateException, KeyStoreException {
+        KeyStore ks = KeyStore.getInstance("JKS");
+        String keystore = "D:\\Work\\workspace\\moquette1645\\broker\\src\\test\\resources\\ows.jks";
+        File jksFile = new File(keystore);
+        InputStream jksInputStream = new FileInputStream(jksFile);
+        ks.load(jksInputStream, "123123".toCharArray());
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(ks, "123123".toCharArray());
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(ks);
+        SSLContext sc = SSLContext.getInstance("TLS");
+        TrustManager[] trustManagers = tmf.getTrustManagers();
+        sc.init(kmf.getKeyManagers(), trustManagers, null);
+        SSLSocketFactory ssf = sc.getSocketFactory();
+        return ssf;
+    }
+
     @Override
-    public boolean quit(String room, String player)   {
+    public boolean quit(String room, String player) {
         try {
             iclient.unsubscribe(Topics.paint(room));
             iclient.unsubscribe(Topics.room(room));

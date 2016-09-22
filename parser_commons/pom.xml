@@ -16,13 +16,25 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <bintray.package>org.dna.mqtt.moquette-parser-commons</bintray.package>
+        <logback-ext-spring.version>0.1.1</logback-ext-spring.version>
     </properties>
 
     <dependencies>
         <dependency>
+            <groupId>org.logback-extensions</groupId>
+            <artifactId>logback-ext-spring</artifactId>
+            <version>${logback-ext-spring.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.6.4</version>
+            <version>1.7.5</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         
         <dependency>

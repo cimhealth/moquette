@@ -196,7 +196,7 @@ public class NettyAcceptor implements ServerAcceptor {
         String sslPortProp = props.getProperty(BrokerConstants.SSL_PORT_PROPERTY_NAME);
         if (sslPortProp == null) {
             //Do nothing no SSL configured
-            LOG.info("SSL is disabled");
+            LOG.info("SSL TCP is disabled");
             return;
         }
 
@@ -225,7 +225,7 @@ public class NettyAcceptor implements ServerAcceptor {
         String sslPortProp = props.getProperty(BrokerConstants.WSS_PORT_PROPERTY_NAME);
         if (sslPortProp == null) {
             //Do nothing no SSL configured
-            LOG.info("SSL is disabled");
+            LOG.info("WSS SSL is disabled");
             return;
         }
         int sslPort = Integer.parseInt(sslPortProp);
