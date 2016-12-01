@@ -49,31 +49,31 @@ public class NettyMQTTHandler extends ChannelInboundHandlerAdapter {
         try {
             switch (msg.getMessageType()) {
                 case CONNECT:
-                    m_processor.processConnect(new NettyChannel(ctx), (ConnectMessage) msg);
+                    m_processor.processConnect(ctx.channel(), (ConnectMessage) msg);
                     break;
                 case SUBSCRIBE:
-                    m_processor.processSubscribe(new NettyChannel(ctx), (SubscribeMessage) msg);
+                    m_processor.processSubscribe(ctx.channel(), (SubscribeMessage) msg);
                     break;
                 case UNSUBSCRIBE:
-                    m_processor.processUnsubscribe(new NettyChannel(ctx), (UnsubscribeMessage) msg);
+                    m_processor.processUnsubscribe(ctx.channel(), (UnsubscribeMessage) msg);
                     break;
                 case PUBLISH:
-                    m_processor.processPublish(new NettyChannel(ctx), (PublishMessage) msg);
+                    m_processor.processPublish(ctx.channel(), (PublishMessage) msg);
                     break;
                 case PUBREC:
-                    m_processor.processPubRec(new NettyChannel(ctx), (PubRecMessage) msg);
+                    m_processor.processPubRec(ctx.channel(), (PubRecMessage) msg);
                     break;
                 case PUBCOMP:
-                    m_processor.processPubComp(new NettyChannel(ctx), (PubCompMessage) msg);
+                    m_processor.processPubComp(ctx.channel(), (PubCompMessage) msg);
                     break;
                 case PUBREL:
-                    m_processor.processPubRel(new NettyChannel(ctx), (PubRelMessage) msg);
+                    m_processor.processPubRel(ctx.channel(), (PubRelMessage) msg);
                     break;
                 case DISCONNECT:
-                    m_processor.processDisconnect(new NettyChannel(ctx));
+                    m_processor.processDisconnect(ctx.channel());
                     break;
                 case PUBACK:
-                    m_processor.processPubAck(new NettyChannel(ctx), (PubAckMessage) msg);
+                    m_processor.processPubAck(ctx.channel(), (PubAckMessage) msg);
                     break;
                 case PINGREQ:
                     PingRespMessage pingResp = new PingRespMessage();
@@ -87,16 +87,16 @@ public class NettyMQTTHandler extends ChannelInboundHandlerAdapter {
     
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        String clientID = (String) NettyUtils.getAttribute(ctx, NettyChannel.ATTR_KEY_CLIENTID);
+        String clientID = NettyUtils.clientID(ctx.channel());
         if (clientID != null && !clientID.isEmpty()) {
             //if the channel was of a correctly connected client, inform messaging
             //else it was of a not completed CONNECT message or sessionStolen
             boolean stolen = false;
-            Boolean stolenAttr = (Boolean) NettyUtils.getAttribute(ctx, NettyChannel.ATTR_KEY_SESSION_STOLEN);
+            Boolean stolenAttr = NettyUtils.sessionStolen(ctx.channel());
             if (stolenAttr != null && stolenAttr == Boolean.TRUE) {
-                stolen = stolenAttr;
+                stolen = true;
             }
-            m_processor.processConnectionLost(clientID, stolen, new NettyChannel(ctx));
+            m_processor.processConnectionLost(clientID, stolen, ctx.channel());
         }
         ctx.close();
     }

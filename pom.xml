@@ -7,14 +7,14 @@
         <source.version>1.8</source.version>
         <target.version>1.8</target.version>
         <bintray.repo>andsel/maven</bintray.repo>
-        <bintray.parent.package>org.dna.mqtt.moquette-parent</bintray.parent.package>
+        <bintray.parent.package>io.moquette.moquette-parent</bintray.parent.package>
     </properties>
 
     <groupId>io.moquette</groupId>
     <artifactId>moquette-parent</artifactId>
 
     <packaging>pom</packaging>
-    <version>0.8</version>
+    <version>0.8.1</version>
     <name>Moquette MQTT parent</name>
     <url>https://github.com/andsel/moquette/</url>
 
@@ -77,6 +77,32 @@
                     <source>${source.version}</source>
                     <target>${target.version}</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

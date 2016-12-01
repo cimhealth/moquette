@@ -451,7 +451,7 @@ public class ServerIntegrationPahoTest {
         clientXA.subscribe("topic", 0);
 
         MqttClient clientXB = createClient("publisher", "X");
-        clientXB.publish("topic", "Hello".getBytes(), 2, true);
+        clientXB.publish("topic", "Hello".getBytes(), 2, false);
 
         TestCallback cbSubscriber2 = new TestCallback();
         MqttClient clientYA = createClient("subscriber", "Y", cbSubscriber2);
@@ -463,6 +463,25 @@ public class ServerIntegrationPahoTest {
         //Verify that the second subscriber client get notified and not the first.
         assertTrue(cbSubscriber1.connectionLost());
         assertEquals("Hello 2", new String(cbSubscriber2.getMessage(true).getPayload()));
+    }
+
+    @Test
+    public void testConnectSubPub_cycle_getTimeout_on_second_disconnect_issue142() throws Exception {
+        LOG.info("*** testConnectSubPub_cycle_getTimeout_on_second_disconnect_issue142 ***");
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setCleanSession(false);
+        m_client.connect(options);
+        m_client.subscribe("/topic", 0);
+        m_client.publish("/topic", "Hello".getBytes(), 0, true);
+        m_client.disconnect();
+
+        //second loop
+        m_client.connect(options);
+        m_client.subscribe("/topic", 0);
+        m_client.publish("/topic", "Hello".getBytes(), 0, true);
+        m_client.disconnect(); //this should give timeout
+
+        assertFalse("after a disconnect the client should be disconnected", m_client.isConnected());
     }
 
 
