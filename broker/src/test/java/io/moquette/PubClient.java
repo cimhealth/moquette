@@ -10,18 +10,18 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.TimeUnit;
 
-public class SendClient {
+public class PubClient {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     IMqttClient iclient;
     MqttClientPersistence dataStore;
 
-    public SendClient() {
+    public PubClient() {
 
     }
 
     static class TestCase extends Thread {
-        SendClient client = new SendClient();
+        PubClient client = new PubClient();
 
         public TestCase() throws MqttException {
             client.connect("tcp://localhost:8999");
@@ -29,10 +29,10 @@ public class SendClient {
 
         @Override
         public void run() {
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 30; i++) {
                 try {
                     client.sendData();
-                    TimeUnit.MILLISECONDS.sleep(500);
+                    TimeUnit.SECONDS.sleep(1);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -46,7 +46,7 @@ public class SendClient {
     }
 
     public static void main(String[] args) throws Exception {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1; i++) {
             new TestCase().start();
         }
     }
@@ -63,13 +63,13 @@ public class SendClient {
 //        iclient.setCallback(new TestCallback());
         iclient.connect();
     }
-
+   static int x = 1;
     public void sendData() {
         try {
-            String s = "fwaewfffawefawefawefawefawefawefawefawefawefawefawefaefawefawefawef";
+            String s = (x++)+"";
             MqttMessage mqttMessage = new MqttMessage(s.getBytes("utf-8"));
             mqttMessage.setRetained(false);
-            mqttMessage.setQos(AbstractMessage.QOSType.MOST_ONE.byteValue());
+            mqttMessage.setQos(AbstractMessage.QOSType.EXACTLY_ONCE.byteValue());
             iclient.publish("S_TEST_BYTE", mqttMessage);
         } catch (MqttException e) {
             e.printStackTrace();
