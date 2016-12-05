@@ -29,7 +29,7 @@ public class PubClient {
 
         @Override
         public void run() {
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 1; i++) {
                 try {
                     client.sendData();
                     TimeUnit.SECONDS.sleep(1);
@@ -68,7 +68,7 @@ public class PubClient {
         try {
             String s = (x++)+"";
             MqttMessage mqttMessage = new MqttMessage(s.getBytes("utf-8"));
-            mqttMessage.setRetained(false);
+//            mqttMessage.setRetained(true);//如设置为true，新订阅者会受到最后一条
             mqttMessage.setQos(AbstractMessage.QOSType.EXACTLY_ONCE.byteValue());
             iclient.publish("S_TEST_BYTE", mqttMessage);
         } catch (MqttException e) {

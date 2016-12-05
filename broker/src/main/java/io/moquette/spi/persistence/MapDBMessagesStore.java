@@ -36,7 +36,7 @@ class MapDBMessagesStore implements IMessagesStore {
     private DB m_db;
 
     //maps clientID -> guid
-    private ConcurrentMap<String, String> m_retainedStore;
+    private ConcurrentMap<String, String> m_retainedStore;//TODO 发布方设置retain时，订阅者初次订阅会得到最后一次消息
     //maps guid to message, it's message store
     private ConcurrentMap<String, IMessagesStore.StoredMessage> m_persistentMessageStore;
 

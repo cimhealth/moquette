@@ -22,7 +22,7 @@ public class SubClient {
     }
 
     public static void main(String[] args) throws Exception {
-        String clientId = "1";
+        String clientId = "2";
         SubClient client = new SubClient(clientId);
         client.connect("tcp://localhost:8999");
         client.sub();
@@ -48,15 +48,20 @@ public class SubClient {
         iclient.close();
     }
 
+    /**
+     *
+     * @param url
+     * @throws MqttException
+     */
     private void connect(String url) throws MqttException {
         String tmpDir = System.getProperty("java.io.tmpdir");
         dataStore = new MqttDefaultFilePersistence(tmpDir + File.separator + "send");
         iclient = new MqttClient(url, clientId, dataStore);
 //        iclient.setCallback(new TestCallback());
         MqttConnectOptions options=new MqttConnectOptions();
-        options.setCleanSession(false);
-        options.setKeepAliveInterval(3);
-        options.setConnectionTimeout(3);
+        options.setCleanSession(true);//如果设置为false会接收错过的消息
+//        options.setKeepAliveInterval(10);
+//        options.setConnectionTimeout(3);
         iclient.connect(options);
     }
 

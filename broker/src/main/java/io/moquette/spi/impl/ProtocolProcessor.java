@@ -349,6 +349,8 @@ public class ProtocolProcessor {
                 }
             }
         }
+
+        //TODO 记录guid关系
         m_interceptor.notifyTopicPublished(msg, clientID);
     }
 
@@ -570,6 +572,9 @@ public class ProtocolProcessor {
     }
 
     public void processPubComp(Channel channel, PubCompMessage msg) {
+
+        //TODO 找到对应的guid，删除,
+        //session也没清
         String clientID = NettyUtils.clientID(channel);
         int messageID = msg.getMessageID();
         LOG.debug("\t\tSRV <--PUBCOMP-- SUB processPubComp invoked for clientID {} ad messageID {}", clientID, messageID);
