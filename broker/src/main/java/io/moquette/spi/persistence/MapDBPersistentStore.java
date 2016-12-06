@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +55,7 @@ public class MapDBPersistentStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(MapDBPersistentStore.class);
 
-    private DB m_db;
+    DB m_db;
     private final String m_storePath;
     private final int m_autosaveInterval; // in seconds
 
@@ -95,6 +96,12 @@ public class MapDBPersistentStore {
                 throw new MQTTException("Can't create temp file for subscriptions storage [" + m_storePath + "]", ex);
             }
             m_db = DBMaker.newFileDB(tmpFile).make();
+//            Map<String,Object> map = m_db.getAll();
+//            for (String key : map.keySet()){
+//                m_db.delete(key);
+//            }
+//            m_db.commit();
+//            System.currentTimeMillis();//TODO 删除数据文件空间不减少
         }
         m_scheduler.scheduleWithFixedDelay(new Runnable() {
             @Override

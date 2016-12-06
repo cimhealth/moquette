@@ -15,18 +15,11 @@ public class SubClient {
 
     IMqttClient iclient;
     MqttClientPersistence dataStore;
-    String clientId;
 
-    public SubClient(String clientId) {
-        this.clientId = clientId;
+
+    public SubClient() {
     }
 
-    public static void main(String[] args) throws Exception {
-        String clientId = "2";
-        SubClient client = new SubClient(clientId);
-        client.connect("tcp://localhost:8999");
-        client.sub();
-    }
 
     private void sub() throws MqttException {
         iclient.subscribe("S_TEST_BYTE", AbstractMessage.QOSType.EXACTLY_ONCE.byteValue(), new IMqttMessageListener() {
@@ -59,10 +52,15 @@ public class SubClient {
         iclient = new MqttClient(url, clientId, dataStore);
 //        iclient.setCallback(new TestCallback());
         MqttConnectOptions options=new MqttConnectOptions();
-        options.setCleanSession(true);//如果设置为false会接收错过的消息
+        options.setCleanSession(false);//如果设置为false会接收错过的消息
 //        options.setKeepAliveInterval(10);
 //        options.setConnectionTimeout(3);
         iclient.connect(options);
     }
-
+    public static void main(String[] args) throws Exception {
+        SubClient client = new SubClient();
+        client.connect("tcp://localhost:8999");
+        client.sub();
+    }
+    String clientId = "sub2";
 }

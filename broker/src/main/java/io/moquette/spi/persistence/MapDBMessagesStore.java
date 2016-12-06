@@ -33,7 +33,7 @@ class MapDBMessagesStore implements IMessagesStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(MapDBMessagesStore.class);
 
-    private DB m_db;
+    DB m_db;
 
     //maps clientID -> guid
     private ConcurrentMap<String, String> m_retainedStore;//TODO 发布方设置retain时，订阅者初次订阅会得到最后一次消息
