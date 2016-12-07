@@ -41,9 +41,16 @@ import java.util.concurrent.ConcurrentMap;
 public class RedisMessagesStore extends MapDBMessagesStore implements IMessagesStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisMessagesStore.class);
-    private RedisTemplate<String, StoredMessage> m_persistentMessageStore;
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate<String, StoredMessage> redisTemplate;
     IConfig props;
+
+    public RedisTemplate<String, StoredMessage> getRedisTemplate() {
+        return redisTemplate;
+    }
+
+    public void setRedisTemplate(RedisTemplate<String, StoredMessage> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     //    private StringRedisTemplate m_retainedStore;
 //    private DB m_db;
@@ -62,25 +69,6 @@ public class RedisMessagesStore extends MapDBMessagesStore implements IMessagesS
 
     @Override
     public void initStore() {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        JedisConnectionFactory connectionFactory = new JedisConnectionFactory();
-        connectionFactory.setHostName(props.getProperty("redis.host"));
-        connectionFactory.setPort(Integer.valueOf(props.getProperty("redis.port")));
-        connectionFactory.setDatabase(Integer.valueOf(props.getProperty("redis.database")));
-        connectionFactory.setTimeout(Integer.valueOf(props.getProperty("redis.timeout")));
-        connectionFactory.setUsePool(Boolean.valueOf(props.getProperty("redis.use.pool")));
-        connectionFactory.setPoolConfig(poolConfig);
-        connectionFactory.afterPropertiesSet();
-//        this.stringRedisTemplate = new StringRedisTemplate(connectionFactory);
-        this.m_persistentMessageStore = new RedisTemplate<String, StoredMessage>();
-        this.m_persistentMessageStore.setConnectionFactory(connectionFactory);
-        this.m_persistentMessageStore.setKeySerializer(new StringRedisSerializer());
-//        this.m_persistentMessageStore.setValueSerializer(new Jackson2JsonRedisSerializer(StoredMessage.class));
-        this.m_persistentMessageStore.setValueSerializer(new JdkSerializationRedisSerializer());
-        this.m_persistentMessageStore.afterPropertiesSet();
-//        this.m_retainedStore = new StringRedisTemplate();
-//        m_retainedStore = m_db.getHashMap("retained");
-//        m_persistentMessageStore = m_db.getHashMap("persistedMessages");
     }
 
     @Override
@@ -110,8 +98,8 @@ public class RedisMessagesStore extends MapDBMessagesStore implements IMessagesS
         }
         String guid = UUID.randomUUID().toString();
         evt.setGuid(guid);
-        m_persistentMessageStore.opsForValue().set(guid, evt);
-//        m_persistentMessageStore.opsForHash().put(evt.getClientID(), evt.getMessageID(), guid);
+        redisTemplate.opsForValue().set(guid, evt);
+//        redisTemplate.opsForHash().put(evt.getClientID(), evt.getMessageID(), guid);
         //这里的键值对是：发布者clientId__发布者唯一消息ID->事件唯一ID
         ConcurrentMap<Integer, String> messageIdToGuid = m_db.getHashMap(MapDBSessionsStore.messageId2GuidsMapName(evt.getClientID()));
         messageIdToGuid.put(evt.getMessageID(), guid);
@@ -123,7 +111,7 @@ public class RedisMessagesStore extends MapDBMessagesStore implements IMessagesS
     public List<StoredMessage> listMessagesInSession(Collection<String> guids) {
         List<StoredMessage> ret = new ArrayList<>();
         for (String guid : guids) {
-            ret.add(m_persistentMessageStore.opsForValue().get(guid));
+            ret.add(redisTemplate.opsForValue().get(guid));
         }
         return ret;
     }
@@ -132,13 +120,13 @@ public class RedisMessagesStore extends MapDBMessagesStore implements IMessagesS
     public void dropMessagesInSession(String clientID) {
         //删除的是作为发布者的历史事件
         m_db.delete(MapDBSessionsStore.messageId2GuidsMapName(clientID));
-//        m_persistentMessageStore.opsForHash().delete(clientID);
-//        m_persistentMessageStore.remove(clientID); //TODO？？
+//        redisTemplate.opsForHash().delete(clientID);
+//        redisTemplate.remove(clientID); //TODO？？
     }
 
     @Override
     public StoredMessage getMessageByGuid(String guid) {
-        return m_persistentMessageStore.opsForValue().get(guid);
+        return redisTemplate.opsForValue().get(guid);
     }
 
     @Override

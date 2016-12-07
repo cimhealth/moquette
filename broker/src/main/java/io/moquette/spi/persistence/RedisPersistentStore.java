@@ -24,6 +24,12 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import redis.clients.jedis.JedisPoolConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,16 +46,32 @@ import static io.moquette.BrokerConstants.PERSISTENT_STORE_PROPERTY_NAME;
  */
 public class RedisPersistentStore extends MapDBPersistentStore {
     IConfig props;
+    JedisConnectionFactory connectionFactory;
+    RedisTemplate redisTemplate;
 
     public RedisPersistentStore(IConfig props) {
         super(props);
         this.props = props;
+        connectionFactory = new JedisConnectionFactory();
+        connectionFactory.setHostName(props.getProperty("redis.host"));
+        connectionFactory.setPort(Integer.valueOf(props.getProperty("redis.port")));
+        connectionFactory.setDatabase(Integer.valueOf(props.getProperty("redis.database")));
+        connectionFactory.setTimeout(Integer.valueOf(props.getProperty("redis.timeout")));
+        connectionFactory.setUsePool(Boolean.valueOf(props.getProperty("redis.use.pool")));
+        connectionFactory.setPoolConfig(new JedisPoolConfig());
+        connectionFactory.afterPropertiesSet();
+        redisTemplate = new RedisTemplate<String, IMessagesStore.StoredMessage>();
+        redisTemplate.setConnectionFactory(connectionFactory);
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+//        redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer(IMessagesStore.StoredMessage.class));
+        redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+        redisTemplate.afterPropertiesSet();
     }
 
     @Override
     public IMessagesStore messagesStore() {
         RedisMessagesStore messagesStore = new RedisMessagesStore(props, m_db);
-        messagesStore.initStore();
+        messagesStore.setRedisTemplate(redisTemplate);
         return messagesStore;
     }
 }
