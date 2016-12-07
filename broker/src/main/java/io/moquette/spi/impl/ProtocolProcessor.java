@@ -572,7 +572,6 @@ public class ProtocolProcessor {
     }
 
     public void processPubComp(Channel channel, PubCompMessage msg) {
-
         //TODO 找到对应的guid，删除,
         //session也没清
         String clientID = NettyUtils.clientID(channel);

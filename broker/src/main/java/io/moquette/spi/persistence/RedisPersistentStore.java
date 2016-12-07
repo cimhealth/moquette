@@ -63,8 +63,8 @@ public class RedisPersistentStore extends MapDBPersistentStore {
         redisTemplate = new RedisTemplate<String, IMessagesStore.StoredMessage>();
         redisTemplate.setConnectionFactory(connectionFactory);
         redisTemplate.setKeySerializer(new StringRedisSerializer());
-//        redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer(IMessagesStore.StoredMessage.class));
-        redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+        redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer(IMessagesStore.StoredMessage.class));
+//        redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
         redisTemplate.afterPropertiesSet();
     }
 
