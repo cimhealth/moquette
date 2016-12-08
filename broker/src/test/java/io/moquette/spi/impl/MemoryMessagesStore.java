@@ -74,6 +74,7 @@ public class MemoryMessagesStore implements IMessagesStore {
         HashMap<Integer, String> guids = (HashMap<Integer, String>) defaultGet(m_messageToGuids,
                 evt.getClientID(), new HashMap<Integer, String>());
         guids.put(evt.getMessageID(), guid);
+        m_messageToGuids.put( evt.getClientID(),guids);//bugfix
         return guid;
     }
 

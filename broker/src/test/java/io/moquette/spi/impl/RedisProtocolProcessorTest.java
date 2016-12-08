@@ -45,7 +45,6 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
- *
  * @author andrea
  */
 public class RedisProtocolProcessorTest {
@@ -71,6 +70,7 @@ public class RedisProtocolProcessorTest {
     ISessionsStore m_sessionStore;
     SubscriptionsStore subscriptions;
     MockAuthenticator m_mockAuthenticator;
+    boolean useRedis = false;
 
     @Before
     public void setUp() throws InterruptedException, IOException {
@@ -84,13 +84,21 @@ public class RedisProtocolProcessorTest {
         //sleep to let the messaging batch processor to process the initEvent
         Thread.sleep(300);
         /////////////////////
-        String str = this.getClass().getResource("/").getFile();
-        File file = new File(str, "/config/moquette_redis.properties");
-        FileConfig config = new FileConfig(file);
-        RedisPersistentStore m_mapStorage = new RedisPersistentStore(config);
-        m_mapStorage.initStore();
-        m_messagesStore = m_mapStorage.messagesStore();
-        m_sessionStore = m_mapStorage.sessionsStore(m_messagesStore);
+
+        if (useRedis) {
+            String str = this.getClass().getResource("/").getFile();
+            File file = new File(str, "/config/moquette_redis.properties");
+            FileConfig config = new FileConfig(file);
+            RedisPersistentStore m_mapStorage = new RedisPersistentStore(config);
+            m_mapStorage.initStore();
+            m_messagesStore = m_mapStorage.messagesStore();
+            m_sessionStore = m_mapStorage.sessionsStore(m_messagesStore);
+        } else {
+            MemoryStorageService memStorage = new MemoryStorageService();
+            memStorage.initStore();
+            m_messagesStore = memStorage.messagesStore();
+            m_sessionStore = memStorage.sessionsStore();
+        }
         ////////////////////////
         //m_messagesStore.initStore();
 
@@ -105,6 +113,86 @@ public class RedisProtocolProcessorTest {
                 new PermitAllAuthorizator(), NO_OBSERVERS_INTERCEPTOR);
     }
 
+    @Test
+    public void qos2Test() throws Exception {
+        final Subscription subscription = new Subscription(FAKE_CLIENT_ID,
+                FAKE_TOPIC, QOSType.EXACTLY_ONCE);
+        final Subscription subscriptionClient2 = new Subscription(FAKE_CLIENT_ID2,
+                FAKE_TOPIC, QOSType.EXACTLY_ONCE);
+
+        //subscriptions.matches(topic) redefine the method to return true
+        SubscriptionsStore subs = new SubscriptionsStore() {
+            @Override
+            public List<Subscription> matches(String topic) {
+                if (topic.equals(FAKE_TOPIC)) {
+                    return Arrays.asList(subscription, subscriptionClient2);
+                } else {
+                    throw new IllegalArgumentException("Expected " + FAKE_TOPIC + " buf found " + topic);
+                }
+            }
+        };
+
+        //simulate a connect that register a clientID to an IoSession
+        MemoryStorageService storageService = new MemoryStorageService();
+        storageService.initStore();
+        subs.init(storageService.sessionsStore());
+        //订阅初始化
+        m_processor.init(subs, m_messagesStore, m_sessionStore, null, true, new PermitAllAuthorizator(), NO_OBSERVERS_INTERCEPTOR);
+
+        //发布者连接
+        EmbeddedChannel publishChannel = new EmbeddedChannel();
+        ConnectMessage connectMessage = new ConnectMessage();
+        connectMessage.setProtocolVersion((byte) 3);
+        connectMessage.setClientID(FAKE_PUBLISHER_ID);
+        connectMessage.setCleanSession(false);
+        m_processor.processConnect(publishChannel, connectMessage);
+        assertConnAckAccepted(publishChannel);
+
+        //两个客户端连接
+        EmbeddedChannel firstReceiverChannel = new EmbeddedChannel();
+        ConnectMessage connectMessage1 = new ConnectMessage();
+        connectMessage1.setProtocolVersion((byte) 3);
+        connectMessage1.setClientID(FAKE_CLIENT_ID);
+        connectMessage1.setCleanSession(true);
+        m_processor.processConnect(firstReceiverChannel, connectMessage1);
+        assertConnAckAccepted(firstReceiverChannel);
+
+        //connect the second fake subscriber
+        EmbeddedChannel secondReceiverChannel = new EmbeddedChannel();
+        ConnectMessage connectMessage2 = new ConnectMessage();
+        connectMessage2.setProtocolVersion((byte) 3);
+        connectMessage2.setClientID(FAKE_CLIENT_ID2);
+        connectMessage2.setCleanSession(true);
+        m_processor.processConnect(secondReceiverChannel, connectMessage2);
+        assertConnAckAccepted(secondReceiverChannel);
+
+        //Exercise
+        ByteBuffer buffer = ByteBuffer.allocate(5).put("Hello".getBytes());
+        buffer.rewind();
+        PublishMessage msg = new PublishMessage();
+        msg.setTopicName(FAKE_TOPIC);
+        msg.setQos(QOSType.EXACTLY_ONCE);
+        msg.setPayload(buffer);
+        msg.setRetainFlag(false);
+        msg.setMessageID(1);
+//        NettyUtils.c(m_channel, FAKE_PUBLISHER_ID);
+        m_processor.processPublish(publishChannel, msg);
+
+        //Verify
+        PubRecMessage pubRecMessage1 = (PubRecMessage) publishChannel.readOutbound();
+        m_processor.processPubRec(publishChannel, pubRecMessage1);
+        PubRelMessage pubRelMessage1 = (PubRelMessage) publishChannel.readOutbound();
+        m_processor.processPubRel(publishChannel, pubRelMessage1);
+        PubCompMessage pubCompMessage = (PubCompMessage) publishChannel.readOutbound();
+        assertNotNull(pubCompMessage);
+        Object obj1 = firstReceiverChannel.readOutbound();
+        Object obj2 = secondReceiverChannel.readOutbound();
+        System.out.println(obj1.getClass().getName());
+        System.out.println(obj2.getClass().getName());
+//        m_processor.processPubComp(m_channel,pubCompMessage1);
+
+
+    }
 
     @Test
     public void testPublishToItself() throws InterruptedException {
@@ -289,7 +377,7 @@ public class RedisProtocolProcessorTest {
         assertEquals(0, subscriptions.size());
         Object recvSubAckMessage = m_channel.readOutbound();
         assertTrue(recvSubAckMessage instanceof SubAckMessage);
-        List<QOSType> qosSubAcked = ((SubAckMessage)recvSubAckMessage).types();
+        List<QOSType> qosSubAcked = ((SubAckMessage) recvSubAckMessage).types();
         assertEquals(1, qosSubAcked.size());
         assertEquals(QOSType.FAILURE, qosSubAcked.get(0));
     }
@@ -445,7 +533,7 @@ public class RedisProtocolProcessorTest {
         //Verify
         Collection<StoredMessage> messages = m_messagesStore.searchMatching(new IMatchingCondition() {
             public boolean match(String key) {
-                return  SubscriptionsStore.matchTopics(key, FAKE_TOPIC);
+                return SubscriptionsStore.matchTopics(key, FAKE_TOPIC);
             }
         });
         assertTrue(messages.isEmpty());
