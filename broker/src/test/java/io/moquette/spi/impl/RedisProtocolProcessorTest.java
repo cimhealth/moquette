@@ -112,14 +112,94 @@ public class RedisProtocolProcessorTest {
         m_processor.init(subscriptions, m_messagesStore, m_sessionStore, m_mockAuthenticator, true,
                 new PermitAllAuthorizator(), NO_OBSERVERS_INTERCEPTOR);
     }
+    @Test
+    public void qos0Test() throws Exception {
+        final Subscription subscription = new Subscription(FAKE_CLIENT_ID,
+                FAKE_TOPIC, QOSType.MOST_ONE);//消息的qos由发送者决定
+        //subscriptions.matches(topic) redefine the method to return true
+        SubscriptionsStore subs = new SubscriptionsStore() {
+            @Override
+            public List<Subscription> matches(String topic) {
+                if (topic.equals(FAKE_TOPIC)) {
+                    return Arrays.asList(subscription);
+                } else {
+                    throw new IllegalArgumentException("Expected " + FAKE_TOPIC + " buf found " + topic);
+                }
+            }
+        };
+        //simulate a connect that register a clientID to an IoSession
+        MemoryStorageService storageService = new MemoryStorageService();
+        storageService.initStore();
+        subs.init(storageService.sessionsStore());
+        //订阅初始化
+        m_processor.init(subs, m_messagesStore, m_sessionStore, null, true, new PermitAllAuthorizator(), NO_OBSERVERS_INTERCEPTOR);
+        //发布者连接
+        EmbeddedChannel publishChannel = connect(FAKE_PUBLISHER_ID);
+        //两个客户端连接
+        EmbeddedChannel firstReceiverChannel = connect(FAKE_CLIENT_ID);
+        //Exercise
+        ByteBuffer buffer = ByteBuffer.allocate(5).put("Hello".getBytes());
+        buffer.rewind();
+        PublishMessage msg = new PublishMessage();
+        msg.setTopicName(FAKE_TOPIC);
+        msg.setQos(QOSType.MOST_ONE);
+        msg.setPayload(buffer);
+        msg.setRetainFlag(false);
+        msg.setMessageID(1);
+//        NettyUtils.c(m_channel, FAKE_PUBLISHER_ID);
+        m_processor.processPublish(publishChannel, msg);
 
+        PublishMessage obj1 = (PublishMessage) firstReceiverChannel.readOutbound();
+        assertNotNull(obj1);
+//        m_processor.processPubComp(m_channel,pubCompMessage1);
+    }
+
+    @Test
+    public void qos1Test() throws Exception {
+        final Subscription subscription = new Subscription(FAKE_CLIENT_ID,
+                FAKE_TOPIC, QOSType.MOST_ONE);//消息的qos由发送者决定
+        //subscriptions.matches(topic) redefine the method to return true
+        SubscriptionsStore subs = new SubscriptionsStore() {
+            @Override
+            public List<Subscription> matches(String topic) {
+                if (topic.equals(FAKE_TOPIC)) {
+                    return Arrays.asList(subscription);
+                } else {
+                    throw new IllegalArgumentException("Expected " + FAKE_TOPIC + " buf found " + topic);
+                }
+            }
+        };
+        //simulate a connect that register a clientID to an IoSession
+        MemoryStorageService storageService = new MemoryStorageService();
+        storageService.initStore();
+        subs.init(storageService.sessionsStore());
+        //订阅初始化
+        m_processor.init(subs, m_messagesStore, m_sessionStore, null, true, new PermitAllAuthorizator(), NO_OBSERVERS_INTERCEPTOR);
+        //发布者连接
+        EmbeddedChannel publishChannel = connect(FAKE_PUBLISHER_ID);
+        //客户端连接
+        EmbeddedChannel firstReceiverChannel = connect(FAKE_CLIENT_ID);
+        ByteBuffer buffer = ByteBuffer.allocate(5).put("Hello".getBytes());
+        buffer.rewind();
+        PublishMessage msg = new PublishMessage();
+        msg.setTopicName(FAKE_TOPIC);
+        msg.setQos(QOSType.LEAST_ONE);
+        msg.setPayload(buffer);
+        msg.setRetainFlag(false);
+        msg.setMessageID(1);
+//        NettyUtils.c(m_channel, FAKE_PUBLISHER_ID);
+        m_processor.processPublish(publishChannel, msg);
+        PubAckMessage pubAckMessage = (PubAckMessage) publishChannel.readOutbound();
+        m_processor.processPubAck(publishChannel, pubAckMessage);
+        PublishMessage obj1 = (PublishMessage) firstReceiverChannel.readOutbound();
+        assertNotNull(obj1);
+    }
     @Test
     public void qos2Test() throws Exception {
         final Subscription subscription = new Subscription(FAKE_CLIENT_ID,
                 FAKE_TOPIC, QOSType.EXACTLY_ONCE);
         final Subscription subscriptionClient2 = new Subscription(FAKE_CLIENT_ID2,
                 FAKE_TOPIC, QOSType.EXACTLY_ONCE);
-
         //subscriptions.matches(topic) redefine the method to return true
         SubscriptionsStore subs = new SubscriptionsStore() {
             @Override
@@ -131,41 +211,17 @@ public class RedisProtocolProcessorTest {
                 }
             }
         };
-
         //simulate a connect that register a clientID to an IoSession
         MemoryStorageService storageService = new MemoryStorageService();
         storageService.initStore();
         subs.init(storageService.sessionsStore());
         //订阅初始化
         m_processor.init(subs, m_messagesStore, m_sessionStore, null, true, new PermitAllAuthorizator(), NO_OBSERVERS_INTERCEPTOR);
-
         //发布者连接
-        EmbeddedChannel publishChannel = new EmbeddedChannel();
-        ConnectMessage connectMessage = new ConnectMessage();
-        connectMessage.setProtocolVersion((byte) 3);
-        connectMessage.setClientID(FAKE_PUBLISHER_ID);
-        connectMessage.setCleanSession(false);
-        m_processor.processConnect(publishChannel, connectMessage);
-        assertConnAckAccepted(publishChannel);
-
-        //两个客户端连接
-        EmbeddedChannel firstReceiverChannel = new EmbeddedChannel();
-        ConnectMessage connectMessage1 = new ConnectMessage();
-        connectMessage1.setProtocolVersion((byte) 3);
-        connectMessage1.setClientID(FAKE_CLIENT_ID);
-        connectMessage1.setCleanSession(true);
-        m_processor.processConnect(firstReceiverChannel, connectMessage1);
-        assertConnAckAccepted(firstReceiverChannel);
-
-        //connect the second fake subscriber
-        EmbeddedChannel secondReceiverChannel = new EmbeddedChannel();
-        ConnectMessage connectMessage2 = new ConnectMessage();
-        connectMessage2.setProtocolVersion((byte) 3);
-        connectMessage2.setClientID(FAKE_CLIENT_ID2);
-        connectMessage2.setCleanSession(true);
-        m_processor.processConnect(secondReceiverChannel, connectMessage2);
-        assertConnAckAccepted(secondReceiverChannel);
-
+        EmbeddedChannel publishChannel = connect(FAKE_PUBLISHER_ID);
+        //客户端连接
+        EmbeddedChannel firstReceiverChannel = connect(FAKE_CLIENT_ID);
+        EmbeddedChannel secondReceiverChannel = connect(FAKE_CLIENT_ID2);
         //Exercise
         ByteBuffer buffer = ByteBuffer.allocate(5).put("Hello".getBytes());
         buffer.rewind();
@@ -177,21 +233,30 @@ public class RedisProtocolProcessorTest {
         msg.setMessageID(1);
 //        NettyUtils.c(m_channel, FAKE_PUBLISHER_ID);
         m_processor.processPublish(publishChannel, msg);
-
-        //Verify
         PubRecMessage pubRecMessage1 = (PubRecMessage) publishChannel.readOutbound();
         m_processor.processPubRec(publishChannel, pubRecMessage1);
         PubRelMessage pubRelMessage1 = (PubRelMessage) publishChannel.readOutbound();
         m_processor.processPubRel(publishChannel, pubRelMessage1);
         PubCompMessage pubCompMessage = (PubCompMessage) publishChannel.readOutbound();
         assertNotNull(pubCompMessage);
-        Object obj1 = firstReceiverChannel.readOutbound();
-        Object obj2 = secondReceiverChannel.readOutbound();
-        System.out.println(obj1.getClass().getName());
-        System.out.println(obj2.getClass().getName());
+        PublishMessage obj1 = (PublishMessage) firstReceiverChannel.readOutbound();
+        PublishMessage obj2 = (PublishMessage) secondReceiverChannel.readOutbound();
+        assertNotNull(obj1);
+        assertNotNull(obj2);
 //        m_processor.processPubComp(m_channel,pubCompMessage1);
 
 
+    }
+
+    private EmbeddedChannel connect(String clentId) {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ConnectMessage connectMessage = new ConnectMessage();
+        connectMessage.setProtocolVersion((byte) 3);
+        connectMessage.setClientID(clentId);
+        connectMessage.setCleanSession(false);
+        m_processor.processConnect(channel, connectMessage);
+        assertConnAckAccepted(channel);
+        return channel;
     }
 
     @Test
