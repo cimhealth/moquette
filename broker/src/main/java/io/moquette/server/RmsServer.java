@@ -20,56 +20,26 @@ public class RmsServer extends Server {
 
     public static void main(String[] args) {
         try {
-            new RmsServer().start("localhost", "8999", "8090");
+            new RmsServer().start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-    public RmsServer() {
+    private RmsServer() {
     }
 
-    private static RmsServer server;
-
-    public void start(String host, String port, String wsport) throws Exception {
-        Properties cfg = new Properties();
-        cfg.put(BrokerConstants.HOST_PROPERTY_NAME, host);
-        cfg.put(BrokerConstants.PORT_PROPERTY_NAME, port);
-        cfg.put(BrokerConstants.WEB_SOCKET_PORT_PROPERTY_NAME, wsport);
-//        MemoryConfig config = new MemoryConfig(cfg);
+    public void start() throws Exception {
         URL str = new ClassPathResource("config/moquette_redis.properties").getURL();
         System.out.println(str);
-        logger.info("config root:{}", str);
+        logger.info("config file:{}", str);
         FileConfig config = new FileConfig(str);
-        server = instance();
-        server.startServer(config, Arrays.asList(new AbstractInterceptHandler() {
-            @Override
-            public void onPublish(InterceptPublishMessage msg) {
-//                System.out.println(msg.getTopicName());
-                if ("S_TEST_BYTE".equalsIgnoreCase(msg.getTopicName())) {
-                    try {
-                        String str = new String(msg.getPayload().array(), "utf-8");
-                        logger.info("Qos=[{}] client=[{}] msg=[{}]", msg.getQos(), msg.getClientID(), str);
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }));
-//        server.startServer(config);
+        this.startServer(config);
         System.out.println("Server started, version 0.8");
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                server.stopServer();
+                stopServer();
             }
         });
-    }
-
-    static private synchronized RmsServer instance() throws Exception {
-        if (server != null) {
-            throw new Exception("too many RmsServer");
-        }
-        return server = new RmsServer();
     }
 
 }
