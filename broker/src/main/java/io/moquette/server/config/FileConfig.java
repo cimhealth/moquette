@@ -16,13 +16,13 @@
  */
 package io.moquette.server.config;
 
+import ch.qos.logback.core.joran.spi.JoranException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.net.URL;
+import java.net.URLConnection;
 import java.text.ParseException;
 import java.util.Properties;
 
@@ -41,6 +41,23 @@ public class FileConfig implements IConfig {
         m_properties.load(new FileInputStream(file));
     }
 
+    public FileConfig(URL url) throws IOException {
+        m_properties =    new Properties();
+        InputStream in = null;
+        try {
+            URLConnection urlConnection = url.openConnection();
+            urlConnection.setUseCaches(false);
+            in = urlConnection.getInputStream();
+            m_properties.load(in);
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException ioe) {
+                }
+            }
+        }
+    }
 
     @Override
     public void setProperty(String name, String value) {

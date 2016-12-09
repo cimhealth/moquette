@@ -108,7 +108,7 @@ final class BrokerInterceptor implements Interceptor {
     }
 
     @Override
-    public void notifyLost(String clientID) {
+    public void notifyLost(final String clientID) {
         for (final InterceptHandler handler : this.handlers) {
             executor.execute(new Runnable() {
                 @Override

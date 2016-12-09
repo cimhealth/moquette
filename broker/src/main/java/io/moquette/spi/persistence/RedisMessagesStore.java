@@ -81,7 +81,6 @@ public class RedisMessagesStore extends MapDBMessagesStore implements IMessagesS
      * 仅在retained时用
      *
      * @param condition
-     * @return
      */
     @Override
     public Collection<StoredMessage> searchMatching(IMatchingCondition condition) {

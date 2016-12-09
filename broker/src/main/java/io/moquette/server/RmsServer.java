@@ -1,43 +1,35 @@
-package io.moquette;
+package io.moquette.server;
 
+import io.moquette.BrokerConstants;
 import io.moquette.interception.AbstractInterceptHandler;
 import io.moquette.interception.messages.InterceptPublishMessage;
-import io.moquette.proto.messages.AbstractMessage;
-import io.moquette.proto.messages.PublishMessage;
-import io.moquette.server.Server;
 import io.moquette.server.config.FileConfig;
-import io.moquette.server.config.FilesystemConfig;
-import io.moquette.server.config.MemoryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Properties;
 
-public class EcgServer extends Server {
+public class RmsServer extends Server {
 
-    private static final Logger logger = LoggerFactory.getLogger(EcgServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(RmsServer.class);
 
     public static void main(String[] args) {
         try {
-            new EcgServer().start("localhost", "8999", "8090");
+            new RmsServer().start("localhost", "8999", "8090");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void init() throws Exception {
-//        new EcgServer().start("localhost", "9988","8090");
-        new EcgServer().start("rdp.dev.cim120.cn", "8999", "8090");
+    public RmsServer() {
     }
 
-    private EcgServer() {
-    }
-
-    private static EcgServer server;
+    private static RmsServer server;
 
     public void start(String host, String port, String wsport) throws Exception {
         Properties cfg = new Properties();
@@ -45,9 +37,10 @@ public class EcgServer extends Server {
         cfg.put(BrokerConstants.PORT_PROPERTY_NAME, port);
         cfg.put(BrokerConstants.WEB_SOCKET_PORT_PROPERTY_NAME, wsport);
 //        MemoryConfig config = new MemoryConfig(cfg);
-        String str = this.getClass().getResource("/").getFile();
-        File file = new File(str, "/config/moquette_redis.properties");
-        FileConfig config = new FileConfig(file);
+        URL str = new ClassPathResource("config/moquette_redis.properties").getURL();
+        System.out.println(str);
+        logger.info("config root:{}", str);
+        FileConfig config = new FileConfig(str);
         server = instance();
         server.startServer(config, Arrays.asList(new AbstractInterceptHandler() {
             @Override
@@ -72,11 +65,11 @@ public class EcgServer extends Server {
         });
     }
 
-    static private synchronized EcgServer instance() throws Exception {
+    static private synchronized RmsServer instance() throws Exception {
         if (server != null) {
-            throw new Exception("too many EcgServer");
+            throw new Exception("too many RmsServer");
         }
-        return server = new EcgServer();
+        return server = new RmsServer();
     }
 
 }
